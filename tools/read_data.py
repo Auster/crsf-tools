@@ -11,6 +11,7 @@ import serial
 
 from msp_codes import MspCodes
 
+SYNC_BYTE = 0xC8
 
 crc8tab = [
     0x00, 0xD5, 0x7F, 0xAA, 0xFE, 0x2B, 0x81, 0x54, 0x29, 0xFC, 0x56, 0x83, 0xD7, 0x02, 0xA8, 0x7D,
@@ -66,9 +67,47 @@ def bytes_to_int_list(bytes):
 
 @unique
 class CrsfFrameAddress(Enum):
-    # NEW ADDR
+    # NEW addresses
+    UNKNOWN_0x01 = 0x01
+
     VTX = 0xCE
 
+    '''
+        ==========New frame===========
+        raw: [200, 8, 52, 25, 0, 16, 231, 46, 0, 32]
+        size: 8
+        type: CrsfFrameType.UNKNOWN_0x34
+        payload:
+          raw: [25, 0, 16, 231, 46, 0]
+          rx_device: CrsfFrameAddress.UNKNOWN_0x19
+          tx_device: CrsfFrameAddress.BROADCAST
+          payload: [16, 231, 46, 0]
+        crc: OK
+    '''
+    UNKNOWN_0x19 = 0x19
+
+
+    '''
+        ==========New frame===========
+        raw: [200, 8, 15, 206, 48, 17, 22, 211, 0, 168]
+        size: 8
+        type: CrsfFrameType.UNKNOWN_0x0F
+        payload:
+          raw: [206, 48, 17, 22, 211, 0]
+          rx_device: CrsfFrameAddress.VTX
+          tx_device: CrsfFrameAddress.UNKNOWN_0x30
+          payload: [17, 22, 211, 0]
+        crc: OK
+        
+        
+        payload still consistent
+        
+    '''
+    UNKNOWN_0x30 = 0x30
+
+    UNKNOWN_0xAC = 0xAC
+
+    # BF codes
     BROADCAST = 0x00
     USB = 0x10
     TBS_CORE_PNP_PRO = 0x80
@@ -87,7 +126,39 @@ class CrsfFrameAddress(Enum):
 @unique
 class CrsfFrameType(Enum):
     UNKNOWN_0x0F = 0x0F
-    UNKNOWN_0x34 = 0x34  # Potentially 
+
+    '''
+        ==========New frame===========
+        raw: [200, 13, 52, 172, 1, 174, 2, 61, 0, 33, 1, 0, 0, 0, 10]
+        address: CrsfFrameAddress.FLIGHT_CONTROLLER
+        size: 13
+        type: CrsfFrameType.UNKNOWN_0x34
+        payload:
+          raw: [172, 1, 174, 2, 61, 0, 33, 1, 0, 0, 0]
+          rx_device: CrsfFrameAddress.UNKNOWN_0xAC
+          tx_device: CrsfFrameAddress.UNKNOWN_0x01
+          payload: ['\xac', '\x01', '\xae', '\x02', '=', '\x00', '!', '\x01', '\x00', '\x00', '\x00']
+        crc: OK
+        ==========New frame===========
+        raw: [200, 8, 52, 25, 0, 195, 2, 61, 0, 30]
+        address: CrsfFrameAddress.FLIGHT_CONTROLLER
+        size: 8
+        type: CrsfFrameType.UNKNOWN_0x34
+        payload:
+          raw: [25, 0, 195, 2, 61, 0]
+          rx_device: CrsfFrameAddress.UNKNOWN_0x19
+          tx_device: CrsfFrameAddress.BROADCAST
+          payload: (3998403,)
+        crc: OK
+        
+        -------------------------------
+        payload depends on RX/TX devices
+        if TX device is BROADCAST it looks like a time from start in ms
+        22:08:19 - [188, 33, 65, 0] -int-> 4268476ms - 4268sec ~ 71min
+        22:10:19 - [236, 29, 67, 0] -int-> 4398572ms - 4398sec ~ 73min
+    
+    '''
+    UNKNOWN_0x34 = 0x34  # Potentially time or so
     UNKNOWN_0x38 = 0x38  # Potentially data frames (FW update)
 
     GPS = 0x02
@@ -171,9 +242,52 @@ class CrsfPayload(object):
 
     @staticmethod
     def decode_unknown_0x34(payload):
+        # try:
+        #     data = struct.unpack("<I", "".join(payload[2:]))
+        # except:
+        #     data = payload
+
         return (
             ("raw", bytes_to_int_list(payload)),
-            ("number", struct.unpack("I", "".join(payload[2:6]))[0])
+            ("rx_device", CrsfFrameAddress(ord(payload[0]))),
+            ("tx_device", CrsfFrameAddress(ord(payload[1]))),
+            ("payload", bytes_to_int_list(payload))
+        )
+
+    @staticmethod
+    def decode_unknown_0x0f(payload):
+        return (
+            ("raw", bytes_to_int_list(payload)),
+            ("rx_device", CrsfFrameAddress(ord(payload[0]))),
+            ("tx_device", CrsfFrameAddress(ord(payload[1]))),
+            ("payload", bytes_to_int_list(payload[2:]))
+        )
+
+    @staticmethod
+    def decode_parameter_write(payload):
+        return (
+            ("raw", bytes_to_int_list(payload)),
+            ("rx_device", CrsfFrameAddress(ord(payload[0]))),
+            ("tx_device", CrsfFrameAddress(ord(payload[1]))),
+            ("payload", bytes_to_int_list(payload[2:]))
+        )
+
+    @staticmethod
+    def decode_parameter_read(payload):
+        return (
+            ("raw", bytes_to_int_list(payload)),
+            ("rx_device", CrsfFrameAddress(ord(payload[0]))),
+            ("tx_device", CrsfFrameAddress(ord(payload[1]))),
+            ("payload", bytes_to_int_list(payload[2:]))
+        )
+
+    @staticmethod
+    def decode_parameter_settings_entry(payload):
+        return (
+            ("raw", bytes_to_int_list(payload)),
+            ("rx_device", CrsfFrameAddress(ord(payload[0]))),
+            ("tx_device", CrsfFrameAddress(ord(payload[1]))),
+            ("payload", payload[2:])
         )
 
     @staticmethod
@@ -428,7 +542,8 @@ if __name__ == "__main__":
             byte = reader.read_data()
             if byte == "":
                 break
-            elif bytes_to_uint(byte) in [CrsfFrameAddress(e).value for e in CrsfFrameAddress.__members__.values()]:
+            # elif bytes_to_uint(byte) in [CrsfFrameAddress(e).value for e in CrsfFrameAddress.__members__.values()]:
+            elif bytes_to_uint(byte) == SYNC_BYTE:
                 frame = reader.read_frame(address=byte)
                 if frame is None:
                     continue
