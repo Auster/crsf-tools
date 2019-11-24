@@ -408,14 +408,14 @@ class CrsfFrame(object):
 
     def __str__(self):
         return "Data size: {}; Data type: {}; " \
-               "Payload: {}; CRC: {};".format(self.data_size, self.frame_type,
+               "Payload: {}; CRC: {};".format(self.data_size, self.frame_type.name,
                                               self.payload, self.crc)
 
     @property
     def fields(self):
         return (
             ('raw', bytes_to_int_list(self.raw)),
-            ('address', self.address),
+            # ('address', self.address),
             ('size', self.data_size),
             ('type', self.frame_type),
             ('payload', self.payload),
@@ -567,6 +567,8 @@ if __name__ == "__main__":
                             LOG.info("payload:")
                             for j in getattr(field[1], 'payload'):
                                 LOG.info("  %s: %s" % (j[0], j[1]))
+                        elif hasattr(field[1], 'name'):
+                            LOG.info("%s: %s" % (field[0], field[1].name))
                         else:
                             LOG.info("%s: %s" % (field[0], field[1]))
                 else:
