@@ -33,6 +33,11 @@ crc8tab = [
 ]
 
 
+def unpack_sting(bytes_list):
+    format = "c" * len(bytes_list)
+    return struct.pack(">{}".format(format), *bytes_list)
+
+
 def setup_logging():
     log_dateformat = "%H:%M:%S"
     log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
@@ -69,6 +74,7 @@ def bytes_to_int_list(bytes):
 class CrsfFrameAddress(Enum):
     # NEW addresses
     UNKNOWN_0x01 = 0x01
+    UNKNOWN_0x16 = 0x16
 
     VTX = 0xCE
 
@@ -101,10 +107,11 @@ class CrsfFrameAddress(Enum):
         
         
         payload still consistent
+        VTX -> RX -> TX -> uart to ESP-12s
         
     '''
     UNKNOWN_0x30 = 0x30
-
+    UNKNOWN_0xAA = 0xAA
     UNKNOWN_0xAC = 0xAC
 
     # BF codes
@@ -287,7 +294,7 @@ class CrsfPayload(object):
             ("raw", bytes_to_int_list(payload)),
             ("rx_device", CrsfFrameAddress(ord(payload[0]))),
             ("tx_device", CrsfFrameAddress(ord(payload[1]))),
-            ("payload", payload[2:])
+            ("payload", unpack_sting(payload[2:]))
         )
 
     @staticmethod
@@ -332,25 +339,24 @@ class CrsfPayload(object):
             ("MSP checksum", bytes_to_int_list(payload[-1]))
         )
 
-    # # FIXME
-    # @staticmethod
-    # def decode_attitude(payload):
-    #     return (
-    #         ("raw", bytes_to_int_list(payload)),
-    #         ("pitch", bytes_to_uint(payload[0:1]) * (3.14159265358979323846 / 180.0)),
-    #         ("roll", bytes_to_uint(payload[2:3]) * (3.14159265358979323846 / 180.0)),
-    #         ("yaw", bytes_to_uint(payload[4:5]) * (3.14159265358979323846 / 180.0))
-    #     )
+    @staticmethod
+    def decode_attitude(payload):
+        return (
+            ("raw", bytes_to_int_list(payload)),
+            ("pitch", float((ord(payload[0]) << 8) + ord(payload[1])) / 1000),
+            ("roll", float((ord(payload[2]) << 8) + ord(payload[3])) / 1000),
+            ("yaw", float((ord(payload[4]) << 8) + ord(payload[5])) / 1000)
+        )
 
-    # @staticmethod
-    # def decode_battery_sensor(payload):
-    #     volt = bytes_to_uint(payload[0:1])
-    #     amp = bytes_to_uint(payload[2:3])
-    #     mah_drawn = bytes_to_uint(payload[4:6])
-    #     battery_remaining_percentage = bytes_to_uint(payload[7])
-    #     return (
-    #             (volt, amp, mah_drawn, battery_remaining_percentage),
-    #     )
+    @staticmethod
+    def decode_battery_sensor(payload):
+        return (
+            ("raw", bytes_to_int_list(payload)),
+            ("voltage", float((ord(payload[0]) << 8) + ord(payload[1])) / 10),
+            ("current", float((ord(payload[2]) << 8) + ord(payload[3])) / 10),
+            ("consumption", (ord(payload[4]) << 16) + (ord(payload[5]) << 8) + ord(payload[6])),
+            ("battary procentage", bytes_to_uint(payload[7])),
+        )
 
     @staticmethod
     def decode_other(payload):
@@ -401,8 +407,8 @@ class CrsfFrame(object):
         self.payload = CrsfPayload(self.frame_type, self.payload)
 
     def __str__(self):
-        return "Address: {}; Data size: {}; Data type: {}; " \
-               "Payload: {}; CRC: {};".format(self.address, self.data_size, self.frame_type,
+        return "Data size: {}; Data type: {}; " \
+               "Payload: {}; CRC: {};".format(self.data_size, self.frame_type,
                                               self.payload, self.crc)
 
     @property
@@ -489,6 +495,8 @@ class Reader(object):
                 return None
             elif not frame.verify_zero():
                 LOG.debug("Zero frame")
+                return None
+            elif frame in skip_types:
                 return None
 
             self.crc_ok += 1
