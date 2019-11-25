@@ -4,10 +4,14 @@ from enum import Enum, unique
 @unique
 class CrsfFrameAddress(Enum):
     # NEW addresses
-    UNKNOWN_0x01 = 0x01
-    UNKNOWN_0x16 = 0x16
-
     VTX = 0xCE
+
+    # "Cloud" devices ESPCrossfire, ESPFustion, ESPGenericHwId, ESPRaceTracker2, ESPTangoV2
+    ESP_MODULE = 0x12
+
+    UNKNOWN_0x01 = 0x01
+    UNKNOWN_0x0C = 0x0C
+    UNKNOWN_0x16 = 0x16
 
     '''
         ==========New frame===========
@@ -47,6 +51,7 @@ class CrsfFrameAddress(Enum):
     # BF codes
     BROADCAST = 0x00
     USB = 0x10
+    TBS_FUSION = 0x14
     TBS_CORE_PNP_PRO = 0x80
     RESERVED1 = 0x8A
     CURRENT_SENSOR = 0xC0
@@ -55,7 +60,7 @@ class CrsfFrameAddress(Enum):
     FLIGHT_CONTROLLER = 0xC8
     RESERVED2 = 0xCA
     RACE_TAG = 0xCC
-    RADIO_TRANSMITTER = 0xEA
+    RADIO_TRANSMITTER = 0xEA  # TBSTangoII
     CRSF_RECEIVER = 0xEC
     CRSF_TRANSMITTER = 0xEE
 
@@ -99,6 +104,7 @@ class CrsfFrameType(Enum):
     UNKNOWN_0x38 = 0x38  # Potentially data frames (FW update)
 
     GPS = 0x02
+    CF_VARIO = 0x07
     BATTERY_SENSOR = 0x08
     LINK_STATISTICS = 0x14
     RC_CHANNELS_PACKED = 0x16
@@ -118,3 +124,36 @@ class CrsfFrameType(Enum):
     MSP_RESP = 0x7B  # reply with 58 byte chunked binary
     MSP_WRITE = 0x7C  # write with 8 byte chunked binary (OpenTX outbound telemetry buffer limit)
     DISPLAYPORT_CMD = 0x7D  # displayport control command
+
+
+class CrsfHardwareID(Enum):
+    CORE_PNP_PRO = 8192
+    OSD_VTX = 8448
+    GPS = 12288
+    DIGITAL_CURRENT_SENSOR = 16384
+    BLACKBOX = 20480
+    FUSION = 393216
+    OLED_DOMINATOR_RX = 40960
+    CROSSFIRE_TX = 65536
+    CROSSFIRE_DIVERSITY_RX = 69632
+    NANO_RX = 73728
+    CROSSFIRE_MICRO_TX = 77824
+    TANGO = 106496
+    COLIBRI_RACE_TBSFLIGHT = 114688
+    BRUSHLESS_WHOOP = 114944
+    BRUSHED_WHOOP = 115200
+    COLIBRI = 819200
+    POWERCUBE_ESC = 860160
+    UNIFY_EVO = 131072
+    UNIFY_PRO32 = 135168
+    UNIFY_PRO32_NANO = 139264
+
+    # "Cloud" devices
+    ESP_GENERIC_HW_ID = 200704
+    ESP_TANGO_V2 = 204800
+    ESP_CROSSFIRE = 208896
+    ESP_RACETRACKER2 = 212992
+    ESP_FUSTION = 217088
+
+    TANGO_II = 262144
+    CROSSFIRE_MICRO_TX_REMOTE = 81920
