@@ -137,7 +137,7 @@ class CrsfPayload(object):
             ("raw", bytes_to_int_list(payload)),
             ("rx_device", CrsfFrameAddress(ord(payload[0]))),
             ("tx_device", CrsfFrameAddress(ord(payload[1]))),
-            ("payload", bytes_to_int_list(payload[2:0]))
+            ("payload", bytes_to_int_list(payload[2:]))
         )
 
     @staticmethod
