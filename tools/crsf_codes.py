@@ -4,11 +4,12 @@ from enum import Enum, unique
 @unique
 class CrsfFrameAddress(Enum):
     # NEW addresses
-    VTX = 0xCE
-
     # "Cloud" devices ESPCrossfire, ESPFustion, ESPGenericHwId, ESPRaceTracker2, ESPTangoV2
     ESP_MODULE = 0x12
+    TBS_FUSION = 0x14
+    VTX = 0xCE
 
+    # 0x28
     UNKNOWN_0x01 = 0x01
     UNKNOWN_0x0C = 0x0C
     UNKNOWN_0x16 = 0x16
@@ -51,7 +52,6 @@ class CrsfFrameAddress(Enum):
     # BF codes
     BROADCAST = 0x00
     USB = 0x10
-    TBS_FUSION = 0x14
     TBS_CORE_PNP_PRO = 0x80
     RESERVED1 = 0x8A
     CURRENT_SENSOR = 0xC0
@@ -68,6 +68,7 @@ class CrsfFrameAddress(Enum):
 @unique
 class CrsfFrameType(Enum):
     UNKNOWN_0x0F = 0x0F
+
 
     '''
         ==========New frame===========
@@ -127,33 +128,37 @@ class CrsfFrameType(Enum):
 
 
 class CrsfHardwareID(Enum):
-    CORE_PNP_PRO = 8192
-    OSD_VTX = 8448
-    GPS = 12288
-    DIGITAL_CURRENT_SENSOR = 16384
-    BLACKBOX = 20480
-    FUSION = 393216
-    OLED_DOMINATOR_RX = 40960
-    CROSSFIRE_TX = 65536
-    CROSSFIRE_DIVERSITY_RX = 69632
-    NANO_RX = 73728
-    CROSSFIRE_MICRO_TX = 77824
-    TANGO = 106496
-    COLIBRI_RACE_TBSFLIGHT = 114688
-    BRUSHLESS_WHOOP = 114944
-    BRUSHED_WHOOP = 115200
-    COLIBRI = 819200
-    POWERCUBE_ESC = 860160
-    UNIFY_EVO = 131072
-    UNIFY_PRO32 = 135168
-    UNIFY_PRO32_NANO = 139264
+    CORE_PNP_PRO = 8192                # 0x02000
+    OSD_VTX = 8448                     # 0x02100
+    GPS = 12288                        # 0x03000
+    DIGITAL_CURRENT_SENSOR = 16384     # 0x04000
+    BLACKBOX = 20480                   # 0x05000
+    OLED_DOMINATOR_RX = 40960          # 0x0a000
+
+    CROSSFIRE_TX = 65536               # 0x10000
+    CROSSFIRE_DIVERSITY_RX = 69632     # 0x11000
+    NANO_RX = 73728                    # 0x12000
+    CROSSFIRE_MICRO_TX = 77824         # 0x13000
+    CROSSFIRE_MICRO_TX_REMOTE = 81920  # 0x14000
+    TANGO = 106496                     # 0x1a000
+    COLIBRI_RACE_TBSFLIGHT = 114688    # 0x1c000
+    BRUSHLESS_WHOOP = 114944           # 0x1c100
+    BRUSHED_WHOOP = 115200             # 0x1c200
+
+    # VTX
+    UNIFY_EVO = 131072                 # 0x20000
+    UNIFY_PRO32 = 135168               # 0x21000
+    UNIFY_PRO32_NANO = 139264          # 0x22000
 
     # "Cloud" devices
-    ESP_GENERIC_HW_ID = 200704
-    ESP_TANGO_V2 = 204800
-    ESP_CROSSFIRE = 208896
-    ESP_RACETRACKER2 = 212992
-    ESP_FUSTION = 217088
+    ESP_GENERIC_HW_ID = 200704         # 0x31000
+    ESP_TANGO_V2 = 204800              # 0x32000
+    ESP_CROSSFIRE = 208896             # 0x33000
+    ESP_RACETRACKER2 = 212992          # 0x34000
+    ESP_FUSTION = 217088               # 0x35000
 
-    TANGO_II = 262144
-    CROSSFIRE_MICRO_TX_REMOTE = 81920
+    TANGO_II = 262144                  # 0x40000
+    FUSION = 393216                    # 0x60000
+    COLIBRI = 819200                   # 0xc8000
+    POWERCUBE_ESC = 860160             # 0xd2000
+
