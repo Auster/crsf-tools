@@ -8,7 +8,7 @@ import struct
 import serial
 
 from msp_codes import MspCodes
-from crsf_codes import CrsfFrameAddress, CrsfFrameType
+from crsf_codes import CrsfFrameAddress, CrsfFrameType, CrsfCommandID
 
 SYNC_BYTE = 0xC8
 
@@ -119,8 +119,8 @@ class CrsfPayload(object):
     def decode_device_info(payload):
         return (
             ("raw", bytes_to_int_list(payload)),
-            ("origin address", CrsfFrameAddress(ord(payload[0]))),
-            ("destination address", CrsfFrameAddress(ord(payload[1]))),
+            ("dst address", CrsfFrameAddress(ord(payload[0]))),
+            ("src address", CrsfFrameAddress(ord(payload[1]))),
             ("info", "".join(payload[2:-15])),
             ("parameter count", ord(payload[-2])),
             ("device info version", ord(payload[-1]))
@@ -135,17 +135,26 @@ class CrsfPayload(object):
 
         return (
             ("raw", bytes_to_int_list(payload)),
-            ("origin address", CrsfFrameAddress(ord(payload[0]))),
-            ("destination address", CrsfFrameAddress(ord(payload[1]))),
+            ("dst address", CrsfFrameAddress(ord(payload[0]))),
+            ("src address", CrsfFrameAddress(ord(payload[1]))),
             ("payload", bytes_to_int_list(payload[2:]))
+        )
+
+    @staticmethod
+    def decode_unknown_0x36(payload):
+        return (
+            ("raw", bytes_to_int_list(payload)),
+            ("dst address", CrsfFrameAddress(ord(payload[0]))),
+            ("src address", CrsfFrameAddress(ord(payload[1]))),
+            ("payload", unpack_sting(payload[2:]))
         )
 
     @staticmethod
     def decode_unknown_0x0f(payload):
         return (
             ("raw", bytes_to_int_list(payload)),
-            ("origin address", CrsfFrameAddress(ord(payload[0]))),
-            ("destination address", CrsfFrameAddress(ord(payload[1]))),
+            ("dst address", CrsfFrameAddress(ord(payload[0]))),
+            ("src address", CrsfFrameAddress(ord(payload[1]))),
             ("payload", bytes_to_int_list(payload[2:]))
         )
 
@@ -153,8 +162,8 @@ class CrsfPayload(object):
     def decode_parameter_write(payload):
         return (
             ("raw", bytes_to_int_list(payload)),
-            ("origin address", CrsfFrameAddress(ord(payload[0]))),
-            ("destination address", CrsfFrameAddress(ord(payload[1]))),
+            ("dst address", CrsfFrameAddress(ord(payload[0]))),
+            ("src address", CrsfFrameAddress(ord(payload[1]))),
             ("payload", bytes_to_int_list(payload[2:]))
         )
 
@@ -162,8 +171,8 @@ class CrsfPayload(object):
     def decode_parameter_read(payload):
         return (
             ("raw", bytes_to_int_list(payload)),
-            ("origin address", CrsfFrameAddress(ord(payload[0]))),
-            ("destination address", CrsfFrameAddress(ord(payload[1]))),
+            ("dst address", CrsfFrameAddress(ord(payload[0]))),
+            ("src address", CrsfFrameAddress(ord(payload[1]))),
             ("payload", bytes_to_int_list(payload[2:]))
         )
 
@@ -171,8 +180,8 @@ class CrsfPayload(object):
     def decode_parameter_settings_entry(payload):
         return (
             ("raw", bytes_to_int_list(payload)),
-            ("origin address", CrsfFrameAddress(ord(payload[0]))),
-            ("destination address", CrsfFrameAddress(ord(payload[1]))),
+            ("dst address", CrsfFrameAddress(ord(payload[0]))),
+            ("src address", CrsfFrameAddress(ord(payload[1]))),
             ("payload", unpack_sting(payload[2:]))
         )
 
@@ -180,8 +189,8 @@ class CrsfPayload(object):
     def decode_msp_resp(payload):
         return (
             ("raw", bytes_to_int_list(payload)),
-            ("origin address", CrsfFrameAddress(ord(payload[0]))),
-            ("destination address", CrsfFrameAddress(ord(payload[1]))),
+            ("dst address", CrsfFrameAddress(ord(payload[0]))),
+            ("src address", CrsfFrameAddress(ord(payload[1]))),
             ("MSP data raw", bytes_to_int_list(payload[2:])),
             ("MSP seq num", int(bytes_to_uint(payload[2]))),
             ("MSP payload length", int(ord(payload[3]))),
@@ -194,8 +203,8 @@ class CrsfPayload(object):
     def decode_msp_req(payload):
         return (
             ("raw", bytes_to_int_list(payload)),
-            ("origin address", CrsfFrameAddress(ord(payload[0]))),
-            ("destination address", CrsfFrameAddress(ord(payload[1]))),
+            ("dst address", CrsfFrameAddress(ord(payload[0]))),
+            ("src address", CrsfFrameAddress(ord(payload[1]))),
             ("MSP data raw", bytes_to_int_list(payload[2:])),
             ("MSP seq num", int(bytes_to_uint(payload[2]))),
             ("MSP payload length", int(ord(payload[3]))),
@@ -205,11 +214,22 @@ class CrsfPayload(object):
         )
 
     @staticmethod
+    def decode_command(payload):
+        return (
+            ("raw", bytes_to_int_list(payload)),
+            ("dst address", CrsfFrameAddress(ord(payload[0]))),
+            ("src address", CrsfFrameAddress(ord(payload[1]))),
+            ("command id", CrsfCommandID(ord(payload[2]))),
+            ("command payload", bytes_to_int_list(payload[3:-1])),
+            ("command crc", bytes_to_int_list(payload[-1]))
+        )
+
+    @staticmethod
     def decode_msp_write(payload):
         return (
             ("raw", bytes_to_int_list(payload)),
-            ("origin address", CrsfFrameAddress(ord(payload[0]))),
-            ("destination address", CrsfFrameAddress(ord(payload[1]))),
+            ("dst address", CrsfFrameAddress(ord(payload[0]))),
+            ("src address", CrsfFrameAddress(ord(payload[1]))),
             ("MSP data raw", bytes_to_int_list(payload[2:])),
             ("MSP seq num", int(bytes_to_uint(payload[2]))),
             ("MSP payload length", int(ord(payload[3]))),
