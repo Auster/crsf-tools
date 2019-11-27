@@ -6,7 +6,7 @@ class CrsfFrameAddress(Enum):
     # NEW addresses
     # "Cloud" devices ESPCrossfire, ESPFustion, ESPGenericHwId, ESPRaceTracker2, ESPTangoV2
     ESP_MODULE = 0x12  # or Bluetooth
-    TBS_FUSION = 0x14
+    FUSION = 0x14
     VTX = 0xCE
 
     UNKNOWN_0x01 = 0x01
@@ -36,15 +36,15 @@ class CrsfFrameAddress(Enum):
     # BF codes
     BROADCAST = 0x00
     USB = 0x10
-    TBS_CORE_PNP_PRO = 0x80
+    CORE_PNP_PRO = 0x80
     RESERVED1 = 0x8A
     CURRENT_SENSOR = 0xC0
     GPS = 0xC2
-    TBS_BLACKBOX = 0xC4
+    BLACKBOX = 0xC4
     FLIGHT_CONTROLLER = 0xC8
     RESERVED2 = 0xCA
     RACE_TAG = 0xCC
-    RADIO_TRANSMITTER = 0xEA  # TBSTangoII
+    RADIO_TRANSMITTER = 0xEA  # TangoII
     RESERVED = 0xEB
     CRSF_RECEIVER = 0xEC
     CRSF_TRANSMITTER = 0xEE
