@@ -28,5 +28,5 @@ esptool.py --port /dev/ttyUSB1 read_flash 0 4MB firmware.backup.bin
 
 ### Diff two binary files (ugly)
 ```
-diff <(xxd firmware1.bin) <(firmware1.bin)
+diff <(xxd firmware1.bin) <(firmware2.bin)
 ```
