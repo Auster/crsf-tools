@@ -54,9 +54,9 @@ class CrsfFrameAddress(Enum):
 class CrsfFrameType(Enum):
     ###############################################
     # Bootloader related
-    START_BOOTLOADER = 0x0A
-    ERASE_MEMORY = 0x0B
-    UNKNOWN_0x28 = 0x28
+    # START_BOOTLOADER = 0x0A
+    # ERASE_MEMORY = 0x0B
+    # UNKNOWN_0x28 = 0x28
     ###############################################
 
     '''
@@ -79,12 +79,18 @@ class CrsfFrameType(Enum):
     '''
     UNKNOWN_0x36 = 0x36  # Data frames ESP. Starts after WiFi connection and connection to internet.
     UNKNOWN_0x38 = 0x38  # Potentially data frames (FW update)
+    UNKNOWN_0x8D = 0x8D
 
 
     GPS = 0x02
     CF_VARIO = 0x07
     BATTERY_SENSOR = 0x08
     HEARTBEAT = 0x0B
+
+    '''
+        Comment:
+        ~15.1s delay between frames with Pro32
+    '''
     VTX = 0x0F
     LINK_STATISTICS = 0x14
     RC_CHANNELS_PACKED = 0x16
@@ -92,6 +98,11 @@ class CrsfFrameType(Enum):
     FLIGHT_MODE = 0x21
 
     # Extended Header Frames, range: 0x28 to 0x96
+    '''
+        Example:
+        USB->BROADCAST: [200, 4, 40, 0, 16, 134]
+        USB->VTX: [206, 16, 10, 10, 236]
+    '''
     DEVICE_PING = 0x28
     DEVICE_INFO = 0x29
     PARAMETER_SETTINGS_ENTRY = 0x2B
@@ -116,7 +127,44 @@ class CrsfCommandID(Enum):
     VTX = 0x08
     LED = 0x09
 
-    UNKNOWN = 0x0A
+    UNKNOWN = 0x0A  # Start bootloader?
+
+
+@unique
+class CrsfVtxInterface(Enum):
+    SMART_AUDIO_V1 = 0
+    SMART_AUDIO_V2 = 1
+    CRSF = 6
+
+
+@unique
+class CrsfVtxXPower(Enum):
+    POWER_25mW = 0
+    POWER_100mW = 1  # or 200mW
+    POWER_200mW = 2  # or 500mW
+    POWER_800mW = 3
+
+
+@unique
+class CrsfVtxPitmode(Enum):
+    OFF = 0
+    IN_BAND = 1
+    OUT_BAND = 2
+
+
+@unique
+class CrsfDataType(Enum):
+    UINT8 = 0
+    INT8 = 1
+    UINT16 = 2
+    INT16 = 3
+    FLOAT = 8
+    TEXT_SELECTION = 9
+    STRING = 10
+    FOLDER = 11
+    INFO = 12
+    COMMAND = 13
+    OUT_OF_RANGE = 127
 
 
 @unique

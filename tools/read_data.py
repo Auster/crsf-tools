@@ -8,9 +8,11 @@ import struct
 import serial
 
 from msp_codes import MspCodes
-from crsf_codes import CrsfFrameAddress, CrsfFrameType, CrsfCommandID
+from crsf_codes import CrsfFrameAddress, CrsfFrameType, CrsfCommandID,\
+    CrsfDataType, CrsfVtxXPower, CrsfVtxPitmode, CrsfVtxInterface
 
 SYNC_BYTE = 0xC8
+MAX_FRAME_SYZE = 62
 
 crc8tab = [
     0x00, 0xD5, 0x7F, 0xAA, 0xFE, 0x2B, 0x81, 0x54, 0x29, 0xFC, 0x56, 0x83, 0xD7, 0x02, 0xA8, 0x7D,
@@ -31,10 +33,34 @@ crc8tab = [
     0x84, 0x51, 0xFB, 0x2E, 0x7A, 0xAF, 0x05, 0xD0, 0xAD, 0x78, 0xD2, 0x07, 0x53, 0x86, 0x2C, 0xF9
 ]
 
+crc8tabCmd = [
+    0x00, 0xBA, 0xCE, 0x74, 0x26, 0x9C, 0xE8, 0x52, 0x4C, 0xF6, 0x82, 0x38, 0x6A, 0xD0, 0xA4, 0x1E,
+    0x98, 0x22, 0x56, 0xEC, 0xBE, 0x04, 0x70, 0xCA, 0xD4, 0x6E, 0x1A, 0xA0, 0xF2, 0x48, 0x3C, 0x86,
+    0x8A, 0x30, 0x44, 0xFE, 0xAC, 0x16, 0x62, 0xD8, 0xC6, 0x7C, 0x08, 0xB2, 0xE0, 0x5A, 0x2E, 0x94,
+    0x12, 0xA8, 0xDC, 0x66, 0x34, 0x8E, 0xFA, 0x40, 0x5E, 0xE4, 0x90, 0x2A, 0x78, 0xC2, 0xB6, 0x0C,
+    0xAE, 0x14, 0x60, 0xDA, 0x88, 0x32, 0x46, 0xFC, 0xE2, 0x58, 0x2C, 0x96, 0xC4, 0x7E, 0x0A, 0xB0,
+    0x36, 0x8C, 0xF8, 0x42, 0x10, 0xAA, 0xDE, 0x64, 0x7A, 0xC0, 0xB4, 0x0E, 0x5C, 0xE6, 0x92, 0x28,
+    0x24, 0x9E, 0xEA, 0x50, 0x02, 0xB8, 0xCC, 0x76, 0x68, 0xD2, 0xA6, 0x1C, 0x4E, 0xF4, 0x80, 0x3A,
+    0xBC, 0x06, 0x72, 0xC8, 0x9A, 0x20, 0x54, 0xEE, 0xF0, 0x4A, 0x3E, 0x84, 0xD6, 0x6C, 0x18, 0xA2,
+    0xE6, 0x5C, 0x28, 0x92, 0xC0, 0x7A, 0x0E, 0xB4, 0xAA, 0x10, 0x64, 0xDE, 0x8C, 0x36, 0x42, 0xF8,
+    0x7E, 0xC4, 0xB0, 0x0A, 0x58, 0xE2, 0x96, 0x2C, 0x32, 0x88, 0xFC, 0x46, 0x14, 0xAE, 0xDA, 0x60,
+    0x6C, 0xD6, 0xA2, 0x18, 0x4A, 0xF0, 0x84, 0x3E, 0x20, 0x9A, 0xEE, 0x54, 0x06, 0xBC, 0xC8, 0x72,
+    0xF4, 0x4E, 0x3A, 0x80, 0xD2, 0x68, 0x1C, 0xA6, 0xB8, 0x02, 0x76, 0xCC, 0x9E, 0x24, 0x50, 0xEA,
+    0x48, 0xF2, 0x86, 0x3C, 0x6E, 0xD4, 0xA0, 0x1A, 0x04, 0xBE, 0xCA, 0x70, 0x22, 0x98, 0xEC, 0x56,
+    0xD0, 0x6A, 0x1E, 0xA4, 0xF6, 0x4C, 0x38, 0x82, 0x9C, 0x26, 0x52, 0xE8, 0xBA, 0x00, 0x74, 0xCE,
+    0xC2, 0x78, 0x0C, 0xB6, 0xE4, 0x5E, 0x2A, 0x90, 0x8E, 0x34, 0x40, 0xFA, 0xA8, 0x12, 0x66, 0xDC,
+    0x5A, 0xE0, 0x94, 0x2E, 0x7C, 0xC6, 0xB2, 0x08, 0x16, 0xAC, 0xD8, 0x62, 0x30, 0x8A, 0xFE, 0x44
+]
+
 
 def unpack_sting(bytes_list):
     format = "c" * len(bytes_list)
     return struct.pack(">{}".format(format), *bytes_list)
+
+
+def list_to_bytes(data):
+    format = "B" * len(data)
+    return struct.pack(">{}".format(format), *data)
 
 
 def setup_logging():
@@ -69,11 +95,14 @@ def bytes_to_int_list(bytes):
     return result
 
 
-def calc_crc(buf):
+def calc_crc(buf, tab='def'):
     length = len(buf)
     crc = 0
     for i in range(length):
-        crc = crc8tab[crc ^ int(ord(buf[i]))]
+        if tab == 'def':
+            crc = crc8tab[crc ^ int(ord(buf[i]))]
+        elif tab == 'cmd':
+            crc = crc8tabCmd[crc ^ int(ord(buf[i]))]
     return crc
 
 
@@ -116,28 +145,44 @@ class CrsfPayload(object):
         )
 
     @staticmethod
+    def decode_device_ping(payload):
+        return (
+            ("raw", bytes_to_int_list(payload)),
+            ("dst address", CrsfFrameAddress(ord(payload[0]))),
+            ("src address", CrsfFrameAddress(ord(payload[1]))),
+        )
+
+    @staticmethod
     def decode_device_info(payload):
         return (
             ("raw", bytes_to_int_list(payload)),
             ("dst address", CrsfFrameAddress(ord(payload[0]))),
             ("src address", CrsfFrameAddress(ord(payload[1]))),
-            ("info", "".join(payload[2:-15])),
+            ("name", "".join(payload[2:-15])),
+            # Zero byte
+            ("serial number", bytes_to_uint(payload[-14:-10])),
+            ("hardware id", hex(bytes_to_uint(payload[-10:-6]))),  # CrsfHardwareID
+            ("firmware id", bytes_to_uint(payload[-6:-2])),
             ("parameter count", ord(payload[-2])),
             ("device info version", ord(payload[-1]))
         )
 
     @staticmethod
-    def decode_unknown_0x34(payload):
-        # try:
-        #     data = struct.unpack("<I", "".join(payload[2:]))
-        # except:
-        #     data = payload
-
+    def decode_unknown_0x38(payload):
         return (
             ("raw", bytes_to_int_list(payload)),
             ("dst address", CrsfFrameAddress(ord(payload[0]))),
             ("src address", CrsfFrameAddress(ord(payload[1]))),
             ("payload", bytes_to_int_list(payload[2:]))
+        )
+
+    @staticmethod
+    def decode_unknown_0x34(payload):
+        return (
+            ("raw", bytes_to_int_list(payload)),
+            ("dst address", CrsfFrameAddress(ord(payload[0]))),
+            ("src address", CrsfFrameAddress(ord(payload[1]))),
+            ("payload", bytes_to_uint(payload[2:13]))
         )
 
     @staticmethod
@@ -146,16 +191,22 @@ class CrsfPayload(object):
             ("raw", bytes_to_int_list(payload)),
             ("dst address", CrsfFrameAddress(ord(payload[0]))),
             ("src address", CrsfFrameAddress(ord(payload[1]))),
-            ("payload", unpack_sting(payload[2:]))
+            ("payload", bytes_to_int_list(payload[2:]))
         )
 
     @staticmethod
-    def decode_unknown_0x0f(payload):
+    def decode_vtx(payload):
         return (
             ("raw", bytes_to_int_list(payload)),
-            ("dst address", CrsfFrameAddress(ord(payload[0]))),
-            ("src address", CrsfFrameAddress(ord(payload[1]))),
-            ("payload", bytes_to_int_list(payload[2:]))
+            ("src address", CrsfFrameAddress(ord(payload[0]))),
+            ("comm mode", CrsfVtxInterface(ord(payload[0]) >> 5)),
+            ("is VTX available", ord(payload[0]) >> 4 & 1),
+            ("is manual freq", ord(payload[0]) >> 1 & 1),  # TODO: test
+            ("is PitMode", ord(payload[0]) & 1),
+            ("band",  ord(payload[2])),
+            ("manual frequency", bytes_to_uint(payload[3:4])),
+            ("PitMode", CrsfVtxPitmode(ord(payload[5]) >> 4)),
+            ("power", CrsfVtxXPower(ord(payload[5]) & int('111', 2)))
         )
 
     @staticmethod
@@ -164,7 +215,8 @@ class CrsfPayload(object):
             ("raw", bytes_to_int_list(payload)),
             ("dst address", CrsfFrameAddress(ord(payload[0]))),
             ("src address", CrsfFrameAddress(ord(payload[1]))),
-            ("payload", bytes_to_int_list(payload[2:]))
+            ("parameter number", ord(payload[2])),
+            ("data", bytes_to_int_list(payload[3:]))
         )
 
     @staticmethod
@@ -173,16 +225,23 @@ class CrsfPayload(object):
             ("raw", bytes_to_int_list(payload)),
             ("dst address", CrsfFrameAddress(ord(payload[0]))),
             ("src address", CrsfFrameAddress(ord(payload[1]))),
-            ("payload", bytes_to_int_list(payload[2:]))
+            ("parameter number", ord(payload[2])),
+            ("parameter chunk number", ord(payload[3]))
         )
 
+    # FIXME
     @staticmethod
     def decode_parameter_settings_entry(payload):
         return (
             ("raw", bytes_to_int_list(payload)),
             ("dst address", CrsfFrameAddress(ord(payload[0]))),
             ("src address", CrsfFrameAddress(ord(payload[1]))),
-            ("payload", unpack_sting(payload[2:]))
+            ("parameter number", ord(payload[2])),
+            ("parameter chunks", ord(payload[3])),
+            ("parent folder", ord(payload[4])),
+            # ("hidden", bytes_to_uint(payload[5]) >> 7),  # TODO: test with hidden fields
+            ("data type", CrsfDataType(ord(payload[5])).name),
+            ("payload", unpack_sting(payload[6:]))  # TODO: Unpack more data
         )
 
     @staticmethod
@@ -219,9 +278,11 @@ class CrsfPayload(object):
             ("raw", bytes_to_int_list(payload)),
             ("dst address", CrsfFrameAddress(ord(payload[0]))),
             ("src address", CrsfFrameAddress(ord(payload[1]))),
-            ("command id", CrsfCommandID(ord(payload[2]))),
+            ("command id", CrsfCommandID(ord(payload[2])).value),
             ("command payload", bytes_to_int_list(payload[3:-1])),
-            ("command crc", bytes_to_int_list(payload[-1]))
+            ("command crc", ord(payload[-1])),
+            ("calculated crc",
+             calc_crc(list_to_bytes([CrsfFrameType.COMMAND.value] + bytes_to_int_list(payload[0:-1])), 'cmd'))  # FIXME
         )
 
     @staticmethod
@@ -264,11 +325,11 @@ class CrsfPayload(object):
         )
 
     def decode(self):
-        try:
-            func_name = "decode_{}".format(self.type.name).lower()
+        func_name = "decode_{}".format(self.type.name).lower()
+        if hasattr(self, func_name):
             decode = getattr(self, func_name)
             self.payload = decode(self.payload_raw)
-        except AttributeError as err:
+        else:
             self.payload = self.decode_other(self.payload_raw)
 
     def __str__(self):
@@ -295,7 +356,7 @@ class CrsfFrame(object):
         self.crc = CrsfCrc(self.crc, self.raw[2:-1])
 
     def verify_zero(self):
-        if self.address == 0 and self.data_size == 0 and self.frame_type == 0 and self.crc.calculated_crc == 0:
+        if self.data_size == 0 and self.frame_type == 0 and self.crc.calculated_crc == 0:
             return False
         return True
 
@@ -379,6 +440,9 @@ class Reader(object):
         LOG.debug("%s - Reading frame" % self.frames_total)
         buf = [address]
         buf += self.read_data(1)  # length
+        if ord(buf[1]) > MAX_FRAME_SYZE:
+            return None
+
         buf += self.read_data(1)  # type
         buf += self.read_data(ord(buf[1]) - 2)  # payload
         buf += self.read_data(1)
@@ -393,20 +457,21 @@ class Reader(object):
                 self.crc_wrong += 1
                 return None
             elif not frame.verify_zero():
-                LOG.debug("Zero frame")
+                LOG.debug("Frame #%s - Zero frame" % self.frames_total)
                 return None
             elif frame in skip_types:
                 return None
 
             self.crc_ok += 1
-            LOG.debug("%s - crc ok" % self.frames_total)
+            LOG.debug("Frame #%s - crc ok" % self.frames_total)
             frame.decode()
             self.frames_decoded += 1
             return frame
 
         except Exception as err:
             self.frames_bad += 1
-            LOG.error("%s - exception while reading/decoding frame" % self.frames_total)
+            LOG.error("Frame #%s - exception while reading/decoding frame" % self.frames_total)
+            LOG.info(bytes_to_int_list(buf))
             LOG.exception(err)
 
 
