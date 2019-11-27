@@ -56,7 +56,6 @@ class CrsfFrameType(Enum):
     # Bootloader related
     # START_BOOTLOADER = 0x0A
     # ERASE_MEMORY = 0x0B
-    # UNKNOWN_0x28 = 0x28
     ###############################################
 
     '''
@@ -165,19 +164,6 @@ class CrsfDataType(Enum):
     INFO = 12
     COMMAND = 13
     OUT_OF_RANGE = 127
-
-    UNKNOWN_0x82 = 130
-
-    #           10  0  3  0x8D E   x    i    t        P   i    t    M   o    d    e
-    # [16, 206, 10, 0, 3, 141, 69, 120, 105, 116, 32, 80, 105, 116, 77, 111, 100, 101, 0, 0, 15, 0]
-    # ('dst address', <CrsfFrameAddress.USB: 16>)
-    # ('src address', <CrsfFrameAddress.VTX: 206>)
-    # ('parameter number', 10)
-    # ('parameter chunks', 0)
-    # ('parent folder', 3)
-    # ('data type', 'UNKNOWN_0x8D')
-    # ('payload', 'Exit PitMode\x00\x00\x0f\x00')
-    UNKNOWN_0x8D = 141
 
 
 @unique

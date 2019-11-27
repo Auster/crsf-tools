@@ -166,8 +166,8 @@ class CrsfPayload(object):
             ("parameter number", ord(payload[2])),
             ("parameter chunks", ord(payload[3])),
             ("parent folder", ord(payload[4])),
-            # ("hidden", bytes_to_uint(payload[5]) >> 7),  # TODO: test with hidden fields
-            ("data type", CrsfDataType(ord(payload[5]))),
+            ("hidden", bytes_to_uint(payload[5]) >> 7),
+            ("data type", CrsfDataType(ord(payload[5]) % int("10000000", 2))),
             ("payload", unpack_sting(payload[6:]))  # TODO: Unpack more data
         )
 
