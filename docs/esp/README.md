@@ -5,10 +5,11 @@
 | Name | Internal name | Device ID |
 | ---- | ------        | ----      |
 | - | ESP_GENERIC_HW_ID | 200704 (0x31000)
-| TBS Tango 2 | ESP_TANGO_V2 | 204800 (0x32000)
-| TBS Crossfire | ESP_CROSSFIRE | 208896 (0x33000)
-| TBS Racetracker 2 | ESP_RACETRACKER2 | 212992 (0x34000)
-| TBS Fusion | ESP_FUSTION | 217088 (0x35000)
+| Tango 2 | ESP_TANGO_V2 | 204800 (0x32000)
+| Crossfire | ESP_CROSSFIRE | 208896 (0x33000)
+| Racetracker 2 | ESP_RACETRACKER2 | 212992 (0x34000)
+| Fusion | ESP_FUSTION | 217088 (0x35000)
+| Micro TX Remote | CROSSFIRE_MICRO_TX_REMOTE | 81920 (0x14000)
 
 
 
