@@ -15,13 +15,13 @@ class CrsfFrameAddress(Enum):
 
     '''
         Example:
-        raw: [200, 8, 52, 25, 0, 16, 231, 46, 0, 32]
+        [200, 8, 52, 25, 0, 16, 231, 46, 0, 32]
     '''
     UNKNOWN_0x19 = 0x19
 
     '''
         Example:
-        raw: [200, 8, 15, 206, 48, 17, 22, 211, 0, 168]
+        [200, 8, 15, 206, 48, 17, 22, 211, 0, 168]
 
         Comments:
         payload still consistent
@@ -29,6 +29,7 @@ class CrsfFrameAddress(Enum):
 
     '''
     UNKNOWN_0x30 = 0x30
+    UNKNOWN_0x6B = 0x6B
     UNKNOWN_0xAA = 0xAA
     UNKNOWN_0xAE = 0xAE
     UNKNOWN_0xAC = 0xAC
@@ -52,15 +53,13 @@ class CrsfFrameAddress(Enum):
 
 @unique
 class CrsfFrameType(Enum):
-    ###############################################
-    # Bootloader related
-    # START_BOOTLOADER = 0x0A
-    # ERASE_MEMORY = 0x0B
-    ###############################################
+    '''
+
+    '''
 
     '''
         Example:
-        raw: [200, 13, 52, 172, 1, 174, 2, 61, 0, 33, 1, 0, 0, 0, 10]
+        [200, 13, 52, 172, 1, 174, 2, 61, 0, 33, 1, 0, 0, 0, 10]
         -------------------------------
         Comment:
         payload depends on RX/TX devices
@@ -73,13 +72,21 @@ class CrsfFrameType(Enum):
 
     '''
         Example:
-        raw: [200, 37, 54, 238, 18, 1, 102, 148, 7, 44, 124, 247, 194, 178, 163, 13, 103, 176, 31, 34, 5, 43, 100, 127, 171, 127, 107, 11, 137, 46, 91, 15, 240, 72, 73, 226, 192, 213, 131]
+        [200, 37, 54, 238, 18, 1, 102, 148, 7, 44, 124, 247, 194, 178, 163, 13, 103, 176, 31, 34, 5, 43, 100, 127, 171, 127, 107, 11, 137, 46, 91, 15, 240, 72, 73, 226, 192, 213, 131]
     
     '''
     UNKNOWN_0x36 = 0x36  # Data frames ESP. Starts after WiFi connection and connection to internet.
+
+
+    '''
+        Example:
+        [200, 20, 56, 206, 16, 1, 4, 0, 2, 32, 0, 1, 5, 0, 0, 148, 0, 74, 133, 23, 64, 132]
+        [200, 55, 56, 206, 16, 3, 0, 128, 152, 228, 108, 63, 35, 70, 225, 172, 7, 16, 193, 50, 26, 141, 146, 167, 121, 240, 252, 113, 71, 183, 80, 52, 180, 83, 119, 3, 207, 201, 116, 81, 133, 111, 18, 163, 202, 255, 133, 81, 25, 79, 13, 91, 15, 164, 148, 110, 44]
+        [200, 6,  56, 206, 16, 4, 192, 172] - still static
+        
+    '''
     UNKNOWN_0x38 = 0x38  # Potentially FW update data frames. Also technical info.
     UNKNOWN_0x8D = 0x8D
-
 
     GPS = 0x02
     CF_VARIO = 0x07
@@ -121,12 +128,14 @@ class CrsfFrameType(Enum):
 @unique
 class CrsfCommandID(Enum):
     FC = 0x01
+
     BLUETOOTH = 0x03
     OSD = 0x05
     VTX = 0x08
     LED = 0x09
 
-    UNKNOWN = 0x0A  # Start bootloader?
+    START_BOOTLOADER = 0x0A
+    # ERASE_MEMORY = 0x0B
 
 
 @unique
@@ -153,21 +162,29 @@ class CrsfVtxPitmode(Enum):
 
 @unique
 class CrsfDataType(Enum):
+    # 7bit value
     UINT8 = 0
     INT8 = 1
     UINT16 = 2
     INT16 = 3
+    UINT32 = 4
+    INT32 = 5
+    UINT64 = 6
+    INT64 = 7
     FLOAT = 8
     TEXT_SELECTION = 9
     STRING = 10
     FOLDER = 11
     INFO = 12
     COMMAND = 13
+    VTX = 15  # RLY?
     OUT_OF_RANGE = 127
 
 
 @unique
 class CrsfHardwareID(Enum):
+    UNDEFINED = 0  # BetaFlight
+
     CORE_PNP_PRO = 8192                # 0x02000
     OSD_VTX = 8448                     # 0x02100
     GPS = 12288                        # 0x03000

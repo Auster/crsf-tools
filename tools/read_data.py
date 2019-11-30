@@ -52,11 +52,8 @@ def bytes_to_uint(bytes):
     return result
 
 
-def bytes_to_int_list(bytes):
-    result = []
-    for i in bytes:
-        result.append(int(ord(i)))
-    return result
+def bytes_to_list(bytes):
+    return list(bytearray(bytes))
 
 
 class CrsfPayload(object):
@@ -75,7 +72,7 @@ class CrsfPayload(object):
             is_armed = False
             end_index = -2
         return (
-            ("raw", bytes_to_int_list(payload)),
+            ("raw", bytes_to_list(payload)),
             ("mode", "".join(payload[0:end_index])),
             ("is_armed", is_armed)
         )
@@ -83,7 +80,7 @@ class CrsfPayload(object):
     @staticmethod
     def decode_battery_sensor(payload):
         return (
-            ("raw", bytes_to_int_list(payload)),
+            ("raw", bytes_to_list(payload)),
             ("voltage", float((ord(payload[0]) << 8) + ord(payload[1])) / 10),
             ("current", float((ord(payload[2]) << 8) + ord(payload[3])) / 10),
             ("consumption", (ord(payload[4]) << 16) + (ord(payload[5]) << 8) + ord(payload[6])),
@@ -93,16 +90,20 @@ class CrsfPayload(object):
     @staticmethod
     def decode_unknown_0x38(payload):
         return (
-            ("raw", bytes_to_int_list(payload)),
+            ("raw", bytes_to_list(payload)),
             ("dst address", CrsfFrameAddress(ord(payload[0]))),
             ("src address", CrsfFrameAddress(ord(payload[1]))),
-            ("payload", bytes_to_int_list(payload[2:]))
+            ("payload", bytes_to_list(payload[2:])),
+            ("(test) param1", bytes_to_list(payload[2])),
+            ("(test) param2", bin(bytes_to_uint(payload[3]))),
+            # ("(test) param3", bytes_to_list(payload[4])),  # list index out of range then payload[2] == 4
+            ("(test) SEQ NUM", bytes_to_list(payload[5:12]))
         )
 
     @staticmethod
     def decode_unknown_0x34(payload):
         return (
-            ("raw", bytes_to_int_list(payload)),
+            ("raw", bytes_to_list(payload)),
             ("dst address", CrsfFrameAddress(ord(payload[0]))),
             ("src address", CrsfFrameAddress(ord(payload[1]))),
             ("payload", bytes_to_uint(payload[2:13]))
@@ -111,16 +112,16 @@ class CrsfPayload(object):
     @staticmethod
     def decode_unknown_0x36(payload):
         return (
-            ("raw", bytes_to_int_list(payload)),
+            ("raw", bytes_to_list(payload)),
             ("dst address", CrsfFrameAddress(ord(payload[0]))),
             ("src address", CrsfFrameAddress(ord(payload[1]))),
-            ("payload", bytes_to_int_list(payload[2:]))
+            ("payload", bytes_to_list(payload[2:]))
         )
 
     @staticmethod
     def decode_vtx(payload):
         return (
-            ("raw", bytes_to_int_list(payload)),
+            ("raw", bytes_to_list(payload)),
             ("src address", CrsfFrameAddress(ord(payload[0]))),
             ("comm mode", CrsfVtxInterface(ord(payload[0]) >> 5)),
             ("is VTX available", ord(payload[0]) >> 4 & 1),
@@ -133,9 +134,18 @@ class CrsfPayload(object):
         )
 
     @staticmethod
+    def decode_displayport_cmd(payload):
+        return (
+            ("raw", bytes_to_list(payload)),
+            ("dst address", CrsfFrameAddress(ord(payload[0]))),
+            ("src address", CrsfFrameAddress(ord(payload[1]))),
+            ("payload", bytes_to_list(payload[1])),
+        )
+
+    @staticmethod
     def decode_device_ping(payload):
         return (
-            ("raw", bytes_to_int_list(payload)),
+            ("raw", bytes_to_list(payload)),
             ("dst address", CrsfFrameAddress(ord(payload[0]))),
             ("src address", CrsfFrameAddress(ord(payload[1]))),
         )
@@ -143,7 +153,7 @@ class CrsfPayload(object):
     @staticmethod
     def decode_device_info(payload):
         return (
-            ("raw", bytes_to_int_list(payload)),
+            ("raw", bytes_to_list(payload)),
             ("dst address", CrsfFrameAddress(ord(payload[0]))),
             ("src address", CrsfFrameAddress(ord(payload[1]))),
             ("name", "".join(payload[2:-15])),
@@ -160,7 +170,7 @@ class CrsfPayload(object):
     @staticmethod
     def decode_parameter_settings_entry(payload):
         return (
-            ("raw", bytes_to_int_list(payload)),
+            ("raw", bytes_to_list(payload)),
             ("dst address", CrsfFrameAddress(ord(payload[0]))),
             ("src address", CrsfFrameAddress(ord(payload[1]))),
             ("parameter number", ord(payload[2])),
@@ -174,7 +184,7 @@ class CrsfPayload(object):
     @staticmethod
     def decode_parameter_read(payload):
         return (
-            ("raw", bytes_to_int_list(payload)),
+            ("raw", bytes_to_list(payload)),
             ("dst address", CrsfFrameAddress(ord(payload[0]))),
             ("src address", CrsfFrameAddress(ord(payload[1]))),
             ("parameter number", ord(payload[2])),
@@ -184,71 +194,71 @@ class CrsfPayload(object):
     @staticmethod
     def decode_parameter_write(payload):
         return (
-            ("raw", bytes_to_int_list(payload)),
+            ("raw", bytes_to_list(payload)),
             ("dst address", CrsfFrameAddress(ord(payload[0]))),
             ("src address", CrsfFrameAddress(ord(payload[1]))),
             ("parameter number", ord(payload[2])),
-            ("data", bytes_to_int_list(payload[3:]))
+            ("data", bytes_to_list(payload[3:]))
         )
 
     @staticmethod
     def decode_command(payload):
         return (
-            ("raw", bytes_to_int_list(payload)),
+            ("raw", bytes_to_list(payload)),
             ("dst address", CrsfFrameAddress(ord(payload[0]))),
             ("src address", CrsfFrameAddress(ord(payload[1]))),
             ("command id", CrsfCommandID(ord(payload[2]))),
-            ("command payload", bytes_to_int_list(payload[3:-1])),
+            ("command payload", bytes_to_list(payload[3:-1])),
             ("command crc", ord(payload[-1])),
-            ("calculated crc", calc_crc(list_to_bytes([0x32] + bytes_to_int_list(payload[0:-1])), 'cmd'))  # FIXME
+            ("calculated crc", calc_crc(list_to_bytes([0x32] + bytes_to_list(payload[0:-1])), 'cmd'))  # FIXME
         )
 
     @staticmethod
     def decode_msp_resp(payload):
         return (
-            ("raw", bytes_to_int_list(payload)),
+            ("raw", bytes_to_list(payload)),
             ("dst address", CrsfFrameAddress(ord(payload[0]))),
             ("src address", CrsfFrameAddress(ord(payload[1]))),
-            ("MSP data raw", bytes_to_int_list(payload[2:])),
+            ("MSP data raw", bytes_to_list(payload[2:])),
             ("MSP seq num", int(bytes_to_uint(payload[2]))),
             ("MSP payload length", int(ord(payload[3]))),
             ("MSP code", MspCodes(ord(payload[4]))),
-            ("MSP payload", bytes_to_int_list(payload[5:4+int(ord(payload[3]))])),
-            ("MSP checksum", bytes_to_int_list(payload[-1]))
+            ("MSP payload", bytes_to_list(payload[5:4 + int(ord(payload[3]))])),
+            ("MSP checksum", bytes_to_list(payload[-1]))
         )
 
     @staticmethod
     def decode_msp_req(payload):
         return (
-            ("raw", bytes_to_int_list(payload)),
+            ("raw", bytes_to_list(payload)),
             ("dst address", CrsfFrameAddress(ord(payload[0]))),
             ("src address", CrsfFrameAddress(ord(payload[1]))),
-            ("MSP data raw", bytes_to_int_list(payload[2:])),
+            ("MSP data raw", bytes_to_list(payload[2:])),
             ("MSP seq num", int(bytes_to_uint(payload[2]))),
             ("MSP payload length", int(ord(payload[3]))),
             ("MSP code", MspCodes(ord(payload[4]))),
-            ("MSP payload", bytes_to_int_list(payload[5:-1])),
-            ("MSP checksum", bytes_to_int_list(payload[-1]))
+            ("MSP payload", bytes_to_list(payload[5:-1])),
+            ("MSP checksum", bytes_to_list(payload[-1]))
         )
 
     @staticmethod
     def decode_msp_write(payload):
         return (
-            ("raw", bytes_to_int_list(payload)),
+            ("raw", bytes_to_list(payload)),
             ("dst address", CrsfFrameAddress(ord(payload[0]))),
             ("src address", CrsfFrameAddress(ord(payload[1]))),
-            ("MSP data raw", bytes_to_int_list(payload[2:])),
+            ("MSP data raw", bytes_to_list(payload[2:])),
             ("MSP seq num", int(bytes_to_uint(payload[2]))),
             ("MSP payload length", int(ord(payload[3]))),
             ("MSP code", MspCodes(ord(payload[4]))),
-            ("MSP payload", bytes_to_int_list(payload[5:-1])),
-            ("MSP checksum", bytes_to_int_list(payload[-1]))
+            ("MSP payload", bytes_to_list(payload[5:-1])),
+            ("MSP checksum", bytes_to_list(payload[-1]))
         )
 
     @staticmethod
     def decode_attitude(payload):
         return (
-            ("raw", bytes_to_int_list(payload)),
+            ("raw", bytes_to_list(payload)),
             ("pitch", float((ord(payload[0]) << 8) + ord(payload[1])) / 1000),
             ("roll", float((ord(payload[2]) << 8) + ord(payload[3])) / 1000),
             ("yaw", float((ord(payload[4]) << 8) + ord(payload[5])) / 1000)
@@ -257,7 +267,7 @@ class CrsfPayload(object):
     @staticmethod
     def decode_other(payload):
         return (
-            ("raw", bytes_to_int_list(payload)),
+            ("raw", bytes_to_list(payload)),
         )
 
     def decode(self):
@@ -310,7 +320,7 @@ class CrsfFrame(object):
     @property
     def fields(self):
         return (
-            ('raw', bytes_to_int_list(self.raw)),
+            ('raw', bytes_to_list(self.raw)),
             # ('address', self.address),
             ('size', self.data_size),
             ('type', self.frame_type),
@@ -330,11 +340,12 @@ class Reader(object):
     crc_wrong = 0
     crc_ok = 0
 
-    def __init__(self, reader_type='file', path=None, raw_log=None, baudrate=420000):
+    def __init__(self, reader_type='file', path=None, raw_log=None, baudrate=420000, raw_log_path=None):
         self.reader_type = reader_type
         self.reader_path = path
         self.reader = None
-        self.raw_log_path = raw_log
+
+        self.raw_log_path = raw_log_path
         self.raw_log = None
 
         self.baudrate = baudrate
@@ -358,6 +369,12 @@ class Reader(object):
         else:
             print("Unknown reader type")
             sys.exit(1)
+
+    def close(self):
+        if self.raw_log_path is not None:
+            self.raw_log.close()
+        if self.reader_type in ['file', 'serial']:
+            self.reader.close()
 
     def read_data(self, length=1):
         if length <= 0:
@@ -390,6 +407,7 @@ class Reader(object):
             frame.unpack()
             frame.verify_crc()
             if not frame.crc.verify():
+                LOG.error("Frame #%s - wrong CRC" % self.frames_total)
                 self.frames_bad += 1
                 self.crc_wrong += 1
                 return None
@@ -408,7 +426,7 @@ class Reader(object):
         except Exception as err:
             self.frames_bad += 1
             LOG.error("Frame #%s - exception while reading/decoding frame" % self.frames_total)
-            LOG.info(bytes_to_int_list(buf))
+            LOG.info(bytes_to_list(buf))
             LOG.exception(err)
 
 
@@ -448,6 +466,7 @@ if __name__ == "__main__":
     args = parse_args()
     LOG = setup_logging()
     LOG.debug("Cli args: %s", args)
+    LOG.info("Reading file: %s" % args.path)
 
     if args.skip_types:
         skip_types = [CrsfFrameType[i] for i in args.skip_types.split(',')]
@@ -462,7 +481,7 @@ if __name__ == "__main__":
     if args.debug:
         LOG.setLevel(logging.DEBUG)
 
-    reader = Reader(args.type, path=args.path, baudrate=args.baudrate)
+    reader = Reader(args.type, path=args.path, baudrate=args.baudrate, raw_log_path=".binlog")
 
     try:
         while True:
@@ -487,6 +506,7 @@ if __name__ == "__main__":
                 reader.bytes_skipped += 1
     except KeyboardInterrupt as err:
         print(err)
+    reader.close()
 
     print("Bytes skipped: %s" % reader.bytes_skipped)
     print("Bytes total: %s" % reader.bytes_total)
